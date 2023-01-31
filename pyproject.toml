@@ -26,6 +26,7 @@ authors = [
 
 [tool.cibuildwheel]
 manylinux-x86_64-image = "manylinux_2_24"
+test-requires = ["scikit-learn~=1.2"]
 build-frontend = "build"
 skip = "pp* *musllinux*"
 test-command = "python -m unittest discover -s {package}/tests"
