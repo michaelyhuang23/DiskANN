@@ -28,7 +28,7 @@ int search_memory_index(diskann::Metric& metric, const std::string& index_path,
                         const std::string& result_path_prefix,
                         const std::string& query_file,
                         const std::string& truthset_file,
-                        const unsigned num_threads, const unsigned recall_at,
+                        const unsigned num_threads, const unsigned recall_at, // recall_at is K -- the number of nearest neighbor we want to find
                         const bool                   print_all_recalls,
                         const std::vector<unsigned>& Lvec, const bool dynamic,
                         const bool tags, const bool show_qps_per_thread,
@@ -80,7 +80,7 @@ int search_memory_index(diskann::Metric& metric, const std::string& index_path,
               << "Mean Latency (mus)" << std::setw(15) << "99.9 Latency";
     table_width += 4 + 12 + 18 + 20 + 15;
   }
-  unsigned       recalls_to_print = 0;
+  unsigned recalls_to_print = 0;
   const unsigned first_recall = print_all_recalls ? 1 : recall_at;
   if (calc_recall_flag) {
     for (unsigned curr_recall = first_recall; curr_recall <= recall_at;
@@ -128,7 +128,7 @@ int search_memory_index(diskann::Metric& metric, const std::string& index_path,
         index.search_with_optimized_layout(
             query + i * query_aligned_dim, recall_at, L,
             query_result_ids[test_id].data() + i * recall_at);
-      } else if (tags) {
+      } else if (tags) { // tags is for dynamic search I think
         index.search_with_tags(query + i * query_aligned_dim, recall_at, L,
                                query_result_tags.data() + i * recall_at,
                                nullptr, res);
