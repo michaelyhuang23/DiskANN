@@ -31,7 +31,7 @@ uint32_t compute_dep_ptr(float* query_ptr, float query_density, float* data, std
 	index.search(query_ptr, L, L, query_result_id.data());
 
 	float minimum_dist = std::numeric_limits<float>::max();
-	uint32_t dep_ptr = 0;
+	uint32_t dep_ptr = -1;
 	for(unsigned i=0; i<L; i++){
 		uint32_t id = query_result_id[i];
 		if(densities[id] > query_density){
