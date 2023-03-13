@@ -24,11 +24,31 @@
 
 namespace po = boost::program_options;
 
-void compute_dependent_point(){
 
+uint32_t compute_dep_ptr(float* query_ptr, float query_density, float* data, std::vector<float>& densities, const size_t data_aligned_dim, const unsigned L,
+		diskann::Index<float, uint32_t>& index, diskann::Distance<float>* distance_metric){
+	std::vector<uint32_t> query_result_id(L, 0);
+	index.search(query_ptr, L, L, query_result_id.data());
+
+	float minimum_dist = std::numeric_limits<float>::max();
+	uint32_t dep_ptr = 0;
+	for(unsigned i=0; i<L; i++){
+		uint32_t id = query_result_id[i];
+		if(densities[id] > query_density){
+			float* ptr = data + id * data_aligned_dim;
+			float dist = distance_metric->compare(query_ptr, ptr, data_aligned_dim);
+			if(dist < minimum_dist){
+				minimum_dist = dist;
+				dep_ptr = id;
+			}
+		}
+	}
+
+	return dep_ptr;
 }
 
-float compute_density(float* query_ptr, float* data, const size_t data_aligned_dim, const unsigned K, const unsigned L, const diskann::Index<float, uint32_t>& index, const Distance<T>* distance_metric){
+float compute_density(float* query_ptr, float* data, const size_t data_aligned_dim, const unsigned K, const unsigned L, 
+		diskann::Index<float, uint32_t>& index, diskann::Distance<float>* distance_metric){
 	std::vector<uint32_t> query_result_id(K, 0);
 	index.search(query_ptr, K, L, query_result_id.data());
 	float* knn = data + query_result_id[K-1] * data_aligned_dim;
@@ -40,21 +60,6 @@ float compute_density(float* query_ptr, float* data, const size_t data_aligned_d
 	}
 }
 
-diskann::Index<float, uint32_t> get_index(const diskann::Metric metric, const unsigned data_dim, const unsigned data_num, const unsigned num_threads, const unsigned Lbuild=100, const unsigned max_degree=64, const unsigned alpha=1.2){
-	diskann::Parameters paras;
-	paras.Set<unsigned>("R", max_degree);
-	paras.Set<unsigned>("L", Lbuild);
-	paras.Set<unsigned>("C", 750);  // maximum candidate set size during pruning procedure
-	paras.Set<float>("alpha", alpha);
-	paras.Set<bool>("saturate_graph", 0);
-	paras.Set<unsigned>("num_threads", num_threads);
-
-	diskann::Index<float, uint32_t> index(metric, data_dim, data_num, false, false, false,
-	                            false, false, false);
-	index.build(data_path.c_str(), data_num, paras);
-	return index;
-}
-
 void dpc(const unsigned K, const unsigned L, const unsigned num_threads, const std::string& data_path, const unsigned Lbuild=100, const unsigned max_degree=64, const float alpha=1.2){
 	float* data = nullptr;
 	size_t data_num, data_dim, data_aligned_dim;
@@ -62,25 +67,7 @@ void dpc(const unsigned K, const unsigned L, const unsigned num_threads, const s
                                data_aligned_dim);
 
 	diskann::Metric metric = diskann::Metric::L2;
-	diskann::Distance distance_metric = diskann::get_distance_function<float>(metric);
-
-	diskann::Index<float, uint32_t> index = get_index(metric, data_dim, data_num, num_threads, Lbuild, max_degree, alpha);
-
-	
-	#pragma omp parallel for schedule(dynamic, 1)
-    for (int64_t i = 0; i < (int64_t) query_num; i++) {
-
-    }
-}
-
-
-void queryKNN(const unsigned K, const unsigned L, const unsigned num_threads, const std::string& data_path, const unsigned Lbuild=100, const unsigned max_degree=64, const float alpha=1.2){
-	float* query = nullptr;
-	size_t query_num, query_dim, query_aligned_dim;
-	diskann::load_aligned_bin<float>(data_path, query, query_num, query_dim,
-                               query_aligned_dim);
-
-	diskann::Metric metric = diskann::Metric::L2;
+	diskann::Distance<float>* distance_metric = diskann::get_distance_function<float>(metric);
 
 	diskann::Parameters paras;
 	paras.Set<unsigned>("R", max_degree);
@@ -90,24 +77,27 @@ void queryKNN(const unsigned K, const unsigned L, const unsigned num_threads, co
 	paras.Set<bool>("saturate_graph", 0);
 	paras.Set<unsigned>("num_threads", num_threads);
 
-	uint64_t data_num, data_dim;
-	diskann::get_bin_metadata(data_path, data_num, data_dim);
 	diskann::Index<float, uint32_t> index(metric, data_dim, data_num, false, false, false,
 	                            false, false, false);
 	index.build(data_path.c_str(), data_num, paras);
 
-	
-    if (L < K) {
-    	diskann::cout << "L smaller than K" << std::endl; 
-    	return;
+	std::vector<float> densities(data_num);
+
+	#pragma omp parallel for schedule(dynamic, 1)
+    for (int64_t i = 0; i < (int64_t) data_num; i++) {
+    	densities[i] = compute_density(data + i*data_aligned_dim, data, data_aligned_dim, K, L, index, distance_metric);
     }
 
-    std::vector<uint32_t> query_result_id(K, 0);
-    index.search(query, K, L, query_result_id.data());
+    std::vector<uint32_t> dep_ptrs(data_num);
 
-    for(size_t i=0; i<K; ++i)
-	    std::cout << query_result_id[i] <<std::endl;
+    #pragma omp parallel for schedule(dynamic, 1)
+    for (int64_t i = 0; i < (int64_t) data_num; i++) {
+    	dep_ptrs[i] = compute_dep_ptr(data + i*data_aligned_dim, densities[i], data, densities, data_aligned_dim, L, index, distance_metric);
+    }
+    // stop here
 }
+
+
 
 int main(int argc, char** argv){
 	std::string query_file;
@@ -127,5 +117,5 @@ int main(int argc, char** argv){
     	std::cerr << ex.what() << '\n';
 	    return -1;
 	}
-	queryKNN(2, 4, 6, query_file);
+	dpc(6, 12, 6, query_file);
 }

@@ -1498,7 +1498,7 @@ namespace diskann {
     }
 
     ScratchStoreManager<InMemQueryScratch<T>> manager(_query_scratch);
-    auto                                      scratch = manager.scratch_space();
+    auto scratch = manager.scratch_space();
 
     if (L > scratch->get_L()) {
       diskann::cout << "Attempting to expand query scratch_space. Was created "
