@@ -142,12 +142,19 @@ namespace diskann {
                                                         size_t K, size_t L,
                                                         unsigned *indices);
 
+
     // Added search overload that takes L as parameter, so that we
     // can customize L on a per-query basis without tampering with "Parameters"
     template<typename IDType>
     DISKANN_DLLEXPORT std::pair<uint32_t, uint32_t> search(
         const T *query, const size_t K, const unsigned L, IDType *indices,
         float *distances = nullptr);
+
+ 
+    DISKANN_DLLEXPORT std::pair<uint32_t, uint32_t> search_density(
+        const T *query, const size_t K, const unsigned L, 
+        const float density_threshold, const unsigned visit_threshold,
+        const std::vector<float> &densities, uint32_t *indices, float *distances = nullptr);
 
     // Initialize space for res_vectors before calling.
     DISKANN_DLLEXPORT size_t search_with_tags(const T *query, const uint64_t K,
@@ -226,6 +233,11 @@ namespace diskann {
     std::pair<uint32_t, uint32_t> iterate_to_fixed_point(
         const T *node_coords, const unsigned Lindex,
         const std::vector<unsigned> &init_ids, InMemQueryScratch<T> *scratch,
+        bool ret_frozen = true, bool search_invocation = false);
+
+    std::pair<uint32_t, uint32_t> iterate_to_fixed_point_til_found(
+        const T *node_coords, const unsigned Lindex, const unsigned visit_threshold,
+        const std::vector<unsigned> &init_ids, const std::function<bool(unsigned)> &filter, InMemQueryScratch<T> *scratch,
         bool ret_frozen = true, bool search_invocation = false);
 
     void search_for_point_and_prune(int location, _u32 Lindex,

@@ -27,11 +27,13 @@ namespace po = boost::program_options;
 
 uint32_t compute_dep_ptr(float* query_ptr, float query_density, float* data, std::vector<float>& densities, const size_t data_aligned_dim, const unsigned L,
 		diskann::Index<float, uint32_t>& index, diskann::Distance<float>* distance_metric){
+	if(L*4 > densities.size()) return -1;
+	
 	std::vector<uint32_t> query_result_id(L, 0);
 	index.search(query_ptr, L, L, query_result_id.data());
 
 	float minimum_dist = std::numeric_limits<float>::max();
-	uint32_t dep_ptr = -1;
+	uint32_t dep_ptr = densities.size();
 	for(unsigned i=0; i<L; i++){
 		uint32_t id = query_result_id[i];
 		if(densities[id] > query_density){
@@ -43,7 +45,9 @@ uint32_t compute_dep_ptr(float* query_ptr, float query_density, float* data, std
 			}
 		}
 	}
-
+	if(dep_ptr == -1){
+		return compute_dep_ptr(query_ptr, query_density, data, densities, data_aligned_dim, L*2, index, distance_metric);
+	}
 	return dep_ptr;
 }
 
