@@ -129,5 +129,5 @@ int main(int argc, char** argv){
     	std::cerr << ex.what() << '\n';
 	    return -1;
 	}
-	dpc(6, 12, 1, 6, query_file, 12, 4);
+	dpc(6, 12, 1, 4, query_file, 12, 4);
 }
