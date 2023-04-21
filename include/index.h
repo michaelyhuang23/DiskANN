@@ -127,7 +127,7 @@ namespace diskann {
     // Batch build from a data array, which must pad vectors to aligned_dim
     DISKANN_DLLEXPORT void build(const T *data, const size_t num_points_to_load,
                                  Parameters              &parameters,
-                                 const std::vector<TagT> &tags);
+                                 const std::vector<TagT> &tags = std::vector<TagT>());
 
     // Set starting point of an index before inserting any points incrementally
     DISKANN_DLLEXPORT void set_start_point(T *data);

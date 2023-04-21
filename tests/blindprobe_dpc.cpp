@@ -46,7 +46,7 @@ float compute_density(float* query_ptr, float* data, const size_t data_aligned_d
 	}else{
 		return 1/distance;
 	}
-}
+} // store knn
 
 void dpc(const unsigned K, const unsigned L, const unsigned Lnn, const unsigned num_threads, const std::string& data_path, const unsigned Lbuild=100, const unsigned max_degree=64, const float alpha=1.2){
 	using std::chrono::high_resolution_clock;

@@ -46,7 +46,7 @@ uint32_t compute_dep_ptr(float* query_ptr, float query_density, float* data, std
 		}
 	}
 	if(dep_ptr == densities.size()){
-		return compute_dep_ptr(query_ptr, query_density, data, densities, data_aligned_dim, L*2, index, distance_metric);
+		return 0;//compute_dep_ptr(query_ptr, query_density, data, densities, data_aligned_dim, L*2, index, distance_metric);
 	}
 	return dep_ptr;
 }
@@ -74,8 +74,11 @@ void dpc(const unsigned K, const unsigned L, const unsigned Lnn, const unsigned 
 
 	float* data = nullptr;
 	size_t data_num, data_dim, data_aligned_dim;
-	diskann::load_aligned_bin<float>(data_path, data, data_num, data_dim,
+	diskann::load_text_file(data_path, data, data_num, data_dim,
                                data_aligned_dim);
+	//diskann::load_aligned_bin<float>(data_path, data, data_num, data_dim,
+      //                         data_aligned_dim);
+
 
 	std::cout<<"data_num: "<<data_num<<std::endl;
 
@@ -94,7 +97,7 @@ void dpc(const unsigned K, const unsigned L, const unsigned Lnn, const unsigned 
 
 	diskann::Index<float, uint32_t> index(metric, data_dim, data_num, false, false, false,
 	                            false, false, false);
-	index.build(data_path.c_str(), data_num, paras);
+	index.build(data, data_num, paras);
 
 	auto pt2 = high_resolution_clock::now();
 	std::cout<<"begin density computation"<<std::endl;
@@ -147,5 +150,5 @@ int main(int argc, char** argv){
     	std::cerr << ex.what() << '\n';
 	    return -1;
 	}
-	dpc(6, 12, 1, 4, query_file, 6, 4);
+	dpc(6, 12, 1, 4, query_file, 12, 4);
 }

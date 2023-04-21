@@ -870,6 +870,12 @@ namespace diskann {
                 (const char *) _data + _aligned_dim * (size_t) nextn,
                 sizeof(T) * _aligned_dim);
           }
+          
+          //std::cout<<"next"<<std::endl;
+          //assert(aligned_query[0]>=0);
+          //assert(aligned_query[1]>=0);
+          //assert(aligned_query[127]>=0);
+          //std::cout<<aligned_query[0]<<" "<<aligned_query[1]<<" "<<aligned_query[127]<<std::endl;
 
           dist_scratch.push_back( _distance->compare(
               aligned_query, _data + _aligned_dim * (size_t) id,
