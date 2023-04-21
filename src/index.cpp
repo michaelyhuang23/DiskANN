@@ -706,6 +706,15 @@ namespace diskann {
     return min_idx;
   }
 
+  inline float debug_distance(float* a, float* b, unsigned dim){
+    float total = 0;
+    for (unsigned i = 0; i < dim; ++i){
+      float th = ((*(a+i)) - (*(b+i)));
+      total +=  th * th;
+    }
+    return sqrt(total);
+  }
+
   template<typename T, typename TagT>
   std::pair<uint32_t, uint32_t> Index<T, TagT>::iterate_to_fixed_point(
       const T *query, const unsigned Lsize,

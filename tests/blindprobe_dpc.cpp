@@ -26,7 +26,8 @@ namespace po = boost::program_options;
 
 
 uint32_t compute_dep_ptr(float* query_ptr, float query_density, float* data, std::vector<float>& densities, const size_t data_aligned_dim, const unsigned L,
-		diskann::Index<float, uint32_t>& index, diskann::Distance<float>* distance_metric){
+		diskann::Index<float, uint32_t>& index, diskann::Metric metric){
+	diskann::Distance<float>* distance_metric = diskann::get_distance_function<float>(metric);
 	if(L*4 > densities.size()) return -1;
 	
 	std::vector<uint32_t> query_result_id(1, 0);
@@ -36,7 +37,8 @@ uint32_t compute_dep_ptr(float* query_ptr, float query_density, float* data, std
 }
 
 float compute_density(float* query_ptr, float* data, const size_t data_aligned_dim, const unsigned K, const unsigned L, 
-		diskann::Index<float, uint32_t>& index, diskann::Distance<float>* distance_metric){
+		diskann::Index<float, uint32_t>& index, diskann::Metric metric){
+	diskann::Distance<float>* distance_metric = diskann::get_distance_function<float>(metric);
 	std::vector<uint32_t> query_result_id(K, 0);
 	index.search(query_ptr, K, L, query_result_id.data());
 	float* knn = data + query_result_id[K-1] * data_aligned_dim;
@@ -57,14 +59,15 @@ void dpc(const unsigned K, const unsigned L, const unsigned Lnn, const unsigned 
 
 	float* data = nullptr;
 	size_t data_num, data_dim, data_aligned_dim;
-	diskann::load_aligned_bin<float>(data_path, data, data_num, data_dim,
+	//diskann::load_aligned_bin<float>(data_path, data, data_num, data_dim,
+      //                         data_aligned_dim);
+	diskann::load_text_file(data_path, data, data_num, data_dim,
                                data_aligned_dim);
 
 	std::cout<<"data_num: "<<data_num<<std::endl;
 
 	diskann::Metric metric = diskann::Metric::L2;
-	diskann::Distance<float>* distance_metric = diskann::get_distance_function<float>(metric);
-
+	
 	diskann::Parameters paras;
 	paras.Set<unsigned>("R", max_degree);
 	paras.Set<unsigned>("L", Lbuild);
@@ -77,7 +80,7 @@ void dpc(const unsigned K, const unsigned L, const unsigned Lnn, const unsigned 
 
 	diskann::Index<float, uint32_t> index(metric, data_dim, data_num, false, false, false,
 	                            false, false, false);
-	index.build(data_path.c_str(), data_num, paras);
+	index.build(data, data_num, paras);
 
 	auto pt2 = high_resolution_clock::now();
 	std::cout<<"begin density computation"<<std::endl;
@@ -86,7 +89,7 @@ void dpc(const unsigned K, const unsigned L, const unsigned Lnn, const unsigned 
 
 	#pragma omp parallel for schedule(dynamic, 1)
     for (int64_t i = 0; i < (int64_t) data_num; i++) {
-    	densities[i] = compute_density(data + i*data_aligned_dim, data, data_aligned_dim, K, L, index, distance_metric);
+    	densities[i] = compute_density(data + i*data_aligned_dim, data, data_aligned_dim, K, L, index, metric);
     }
 
     auto pt3 = high_resolution_clock::now();
@@ -96,7 +99,7 @@ void dpc(const unsigned K, const unsigned L, const unsigned Lnn, const unsigned 
 
     #pragma omp parallel for schedule(dynamic, 1)
     for (int64_t i = 0; i < (int64_t) data_num; i++) {
-    	dep_ptrs[i] = compute_dep_ptr(data + i*data_aligned_dim, densities[i], data, densities, data_aligned_dim, Lnn, index, distance_metric);
+    	dep_ptrs[i] = compute_dep_ptr(data + i*data_aligned_dim, densities[i], data, densities, data_aligned_dim, Lnn, index, metric);
     }
 
     auto pt4 = high_resolution_clock::now();
