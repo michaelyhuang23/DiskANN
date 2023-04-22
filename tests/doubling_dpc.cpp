@@ -30,18 +30,16 @@ uint32_t compute_dep_ptr(float* query_ptr, float query_density, float* data, std
 	diskann::DistanceL2Float distance_metric;
 	if(L*4 > densities.size()) return densities.size();
 	
-	std::vector<uint32_t> query_result_id(L, std::numeric_limits<uint32_t>::max());
+	std::vector<uint32_t> query_result_id(L, densities.size());
 	index.search(query_ptr, L, L, query_result_id.data());
 
 	float minimum_dist = std::numeric_limits<float>::max();
 	uint32_t dep_ptr = densities.size();
 	for(unsigned i=0; i<L; i++){
 		uint32_t id = query_result_id[i];
-		if(id == std::numeric_limits<uint32_t>::max()) break;
-		diskann::cout<<"id is: "<<id<<" size is "<<densities.size()<<" "<<L<<std::endl;
+		if(id == densities.size()) break;
 		if(densities[id] > query_density){
 			float* ptr = data + id * data_aligned_dim;
-			diskann::cout<< (*ptr) <<" " << (*(ptr + 1)) <<std::endl;
 			float dist = distance_metric.compare(query_ptr, ptr, data_aligned_dim);
 			if(dist < minimum_dist){
 				minimum_dist = dist;
@@ -50,7 +48,7 @@ uint32_t compute_dep_ptr(float* query_ptr, float query_density, float* data, std
 		}
 	}
 	if(dep_ptr == densities.size()){
-		return 0;//compute_dep_ptr(query_ptr, query_density, data, densities, data_aligned_dim, L*2, index);
+		return compute_dep_ptr(query_ptr, query_density, data, densities, data_aligned_dim, L*2, index);
 	}
 	return dep_ptr;
 }
@@ -107,7 +105,8 @@ void dpc(const unsigned K, const unsigned L, const unsigned Lnn, const unsigned 
 
 	std::vector<float> densities(data_num);
 
-	//#pragma omp parallel for schedule(dynamic, 1)
+	omp_set_num_threads(num_threads);
+	#pragma omp parallel for schedule(dynamic, 1)
     for (int64_t i = 0; i < (int64_t) data_num; i++) {
     	densities[i] = compute_density(data + i*data_aligned_dim, data, data_aligned_dim, K, L, index);
     }
@@ -117,7 +116,8 @@ void dpc(const unsigned K, const unsigned L, const unsigned Lnn, const unsigned 
 
     std::vector<uint32_t> dep_ptrs(data_num);
 
-    //#pragma omp parallel for schedule(dynamic, 1)
+    omp_set_num_threads(num_threads);
+    #pragma omp parallel for schedule(dynamic, 1)
     for (int64_t i = 0; i < (int64_t) data_num; i++) {
     	dep_ptrs[i] = compute_dep_ptr(data + i*data_aligned_dim, densities[i], data, densities, data_aligned_dim, Lnn, index);
     }
@@ -153,5 +153,5 @@ int main(int argc, char** argv){
     	std::cerr << ex.what() << '\n';
 	    return -1;
 	}
-	dpc(6, 12, 1, 1, query_file, 12, 4);
+	dpc(6, 12, 2, 8, query_file, 12, 4);
 }

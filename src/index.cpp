@@ -2,6 +2,7 @@
 // Licensed under the MIT license.
 
 #include <type_traits>
+#include <typeinfo>
 #include <omp.h>
 
 #include "tsl/robin_set.h"
@@ -706,10 +707,11 @@ namespace diskann {
     return min_idx;
   }
 
-  inline float debug_distance(float* a, float* b, unsigned dim){
-    float total = 0;
+  template<typename T>
+  inline T debug_distance(T* a, T* b, unsigned dim){
+    T total = 0;
     for (unsigned i = 0; i < dim; ++i){
-      float th = ((*(a+i)) - (*(b+i)));
+      T th = ((*(a+i)) - (*(b+i)));
       total +=  th * th;
     }
     return sqrt(total);
@@ -816,12 +818,14 @@ namespace diskann {
         }
 
         float distance;
+        //std::<<typeid(_data).name()<<" "<<typeid(aligned_query).name()<<std::endl;
         if (_pq_dist)
           pq_dist_lookup(pq_coord_scratch, 1, this->_num_pq_chunks, pq_dists,
                          &distance);
-        else
+        else{
           distance = _distance->compare(_data + _aligned_dim * (size_t) id,
                                         aligned_query, (unsigned) _aligned_dim);
+        }
         Neighbor nn = Neighbor(id, distance);
         best_L_nodes.insert(nn);
       }
@@ -879,12 +883,6 @@ namespace diskann {
                 (const char *) _data + _aligned_dim * (size_t) nextn,
                 sizeof(T) * _aligned_dim);
           }
-          
-          //std::cout<<"next"<<std::endl;
-          //assert(aligned_query[0]>=0);
-          //assert(aligned_query[1]>=0);
-          //assert(aligned_query[127]>=0);
-          //std::cout<<aligned_query[0]<<" "<<aligned_query[1]<<" "<<aligned_query[127]<<std::endl;
 
           dist_scratch.push_back( _distance->compare(
               aligned_query, _data + _aligned_dim * (size_t) id,
