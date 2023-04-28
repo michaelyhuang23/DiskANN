@@ -68,7 +68,7 @@ float compute_density(float* query_ptr, float* data, const size_t data_aligned_d
 }
 
 
-void dpc(const unsigned K, const unsigned L, const unsigned Lnn, const unsigned num_threads, const std::string& data_path, const unsigned Lbuild=100, const unsigned max_degree=64, const float alpha=1.2){
+void dpc(const unsigned K, const unsigned L, const unsigned Lnn, const unsigned num_threads, const std::string& data_path, const std::string& output_path, const unsigned Lbuild=100, const unsigned max_degree=64, const float alpha=1.2){
 	using std::chrono::high_resolution_clock;
     using std::chrono::duration_cast;
     using std::chrono::duration;
@@ -89,6 +89,7 @@ void dpc(const unsigned K, const unsigned L, const unsigned Lnn, const unsigned 
 	diskann::Parameters paras;
 	paras.Set<unsigned>("R", max_degree);
 	paras.Set<unsigned>("L", Lbuild);
+	paras.Set<unsigned>("Lnn", 2048);
 	paras.Set<unsigned>("C", 750);  // maximum candidate set size during pruning procedure
 	paras.Set<float>("alpha", alpha);
 	paras.Set<bool>("saturate_graph", 0);
@@ -122,6 +123,8 @@ void dpc(const unsigned K, const unsigned L, const unsigned Lnn, const unsigned 
     	dep_ptrs[i] = compute_dep_ptr(data + i*data_aligned_dim, densities[i], data, densities, data_aligned_dim, Lnn, index);
     }
 
+    diskann::aligned_free(data);
+
     auto pt4 = high_resolution_clock::now();
     std::cout<<"finish all"<<std::endl;
 
@@ -130,18 +133,29 @@ void dpc(const unsigned K, const unsigned L, const unsigned Lnn, const unsigned 
     std::cout<<duration_cast<microseconds>(pt3-pt2).count()/1000000.0<<std::endl;
     std::cout<<duration_cast<microseconds>(pt4-pt3).count()/1000000.0<<std::endl;
     // stop here
+
+    if(output_path != ""){
+    	std::ofstream fout(output_path);
+    	for (size_t i = 0; i < dep_ptrs.size(); i++){
+    		fout << dep_ptrs[i] << std::endl;
+    	}
+    	fout.close();
+	}
 }
 
 
 
 
 int main(int argc, char** argv){
-	std::string query_file;
+	std::string query_file, output_file;
 	po::options_description desc{"Arguments"};
  	try {
 	    desc.add_options()("query_file",
                        po::value<std::string>(&query_file)->required(),
                        "Query file in binary format");
+	    desc.add_options()("output_file",
+                       po::value<std::string>(&output_file)->default_value(""),
+                       "Output file in binary format");
 	    po::variables_map vm;
 	    po::store(po::parse_command_line(argc, argv, desc), vm);
     	if (vm.count("help")) {
@@ -153,5 +167,5 @@ int main(int argc, char** argv){
     	std::cerr << ex.what() << '\n';
 	    return -1;
 	}
-	dpc(6, 12, 2, 8, query_file, 12, 4);
+	dpc(6, 12, 2, 8, query_file, output_file, 12, 4);
 }

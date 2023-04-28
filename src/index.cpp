@@ -44,7 +44,7 @@ namespace diskann {
     uint32_t num_threads_srch = searchParams.Get<uint32_t>("num_threads");
     uint32_t num_threads_indx = indexParams.Get<uint32_t>("num_threads");
     uint32_t num_scratch_spaces = num_threads_srch + num_threads_indx;
-    uint32_t search_l = searchParams.Get<uint32_t>("L");
+    uint32_t search_l = searchParams.Get<uint32_t>("Lnn");
 
     initialize_query_scratch(num_scratch_spaces, search_l, _indexingQueueSize,
                              _indexingRange, _indexingMaxC, dim);
@@ -1487,10 +1487,11 @@ namespace diskann {
     uint32_t index_R = parameters.Get<uint32_t>("R");
     uint32_t num_threads_index = parameters.Get<uint32_t>("num_threads");
     uint32_t index_L = parameters.Get<uint32_t>("L");
+    uint32_t search_L = parameters.Get<uint32_t>("Lnn");
     uint32_t maxc = parameters.Get<uint32_t>("C");
 
     if (_query_scratch.size() == 0) {
-      initialize_query_scratch(5 + num_threads_index, index_L, index_L, index_R,
+      initialize_query_scratch(5 + num_threads_index, search_L, index_L, index_R,
                                maxc, _aligned_dim);
     }
 
