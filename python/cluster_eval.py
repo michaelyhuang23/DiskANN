@@ -11,6 +11,9 @@ assert(len(sys.argv) >= 3)
 gt_path = sys.argv[1]
 cluster_path = sys.argv[2]
 
+print(f'reading gt from {gt_path}')
+print(f'reading result from {cluster_path}')
+
 with open(gt_path, 'r') as file:
 	labels = np.array([int(line.rstrip()) for line in file])
 
@@ -23,7 +26,7 @@ preds -= np.min(preds)
 label_counter = Counter(labels)
 pred_counter = Counter(preds)
 TP_count = 0
-for label, label_count in label_counter.item():
+for label, label_count in label_counter.items():
 	ids = np.argwhere(labels == label)[:,0]
 	pred, pred_count = stats.mode(preds[ids], axis=None, keepdims=False)
 	if pred_count / (label_count + pred_counter[pred] - pred_count) > 0.5 :
@@ -48,4 +51,6 @@ result['AMI'] = AMI
 result['Arand'] = Arand
 result['completeness'] = completeness
 result['homogeneity'] = homogeneity
+
+print(result)
 

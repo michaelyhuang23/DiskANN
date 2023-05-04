@@ -19,7 +19,10 @@ project(diskann)
 
 cmake_minimum_required(VERSION 3.15)
 
-set(CMAKE_STANDARD 14)
+set(CMAKE_STANDARD 17)
+
+
+# used to be 14
 
 if(NOT MSVC)
 	set(CMAKE_CXX_COMPILER g++)
@@ -212,7 +215,7 @@ endif()
 #Main compiler/linker settings 
 if(MSVC)
 	#language options
-	add_compile_options(/permissive- /openmp:experimental /Zc:twoPhase- /Zc:inline /WX- /std:c++14 /Gd /W3 /MP /Zi /FC /nologo)
+	add_compile_options(/permissive- /openmp:experimental /Zc:twoPhase- /Zc:inline /WX- /std:c++17 /Gd /W3 /MP /Zi /FC /nologo)
 	#code generation options
 	add_compile_options(/arch:AVX2 /fp:fast /fp:except- /EHsc /GS- /Gy)
 	#optimization options
@@ -240,6 +243,8 @@ else()
         add_compile_options(-fPIC)
     endif()
 endif()
+
+find_package(Parlay REQUIRED)
 
 add_subdirectory(src)
 add_subdirectory(tests)

@@ -22,6 +22,12 @@
 #include "utils.h"
 #include "ann_exception.h"
 
+#include "parlay/parallel.h"
+#include "parlay/sequence.h"
+#include "parlay/primitives.h"
+#include "pargeo/unionFind.h"
+
+
 namespace po = boost::program_options;
 
 
@@ -54,6 +60,8 @@ void dpc(const unsigned K, const unsigned L, const unsigned Lnn, const unsigned 
     using std::chrono::duration_cast;
     using std::chrono::duration;
     using std::chrono::microseconds;
+
+    std::cout<<__cplusplus<<std::endl;
 
 
 	float* data = nullptr;
@@ -105,18 +113,32 @@ void dpc(const unsigned K, const unsigned L, const unsigned Lnn, const unsigned 
     diskann::aligned_free(data);
 
     auto pt4 = high_resolution_clock::now();
+
+    pargeo::unionFind<int> UF(densities.size());
+	parlay::parallel_for(0, densities.size(), [&](int i){
+		if(dep_ptrs[i] != densities.size())
+			UF.link(i, dep_ptrs[i]);
+	});
+	std::vector<int> cluster(densities.size());
+	parlay::parallel_for(0, densities.size(), [&](int i){
+		cluster[i] = UF.find(i);
+	});
+
+	auto pt5 = high_resolution_clock::now();
+
     std::cout<<"finish all"<<std::endl;
 
-    std::cout<<"1. index construction time \n2. density computation time \n3. dependent point computation time"<<std::endl;
+    std::cout<<"1. index construction time \n2. density computation time \n3. dependent point computation time \n4. clustering time"<<std::endl;
     std::cout<<duration_cast<microseconds>(pt2-pt1).count()/1000000.0<<std::endl;
     std::cout<<duration_cast<microseconds>(pt3-pt2).count()/1000000.0<<std::endl;
     std::cout<<duration_cast<microseconds>(pt4-pt3).count()/1000000.0<<std::endl;
+    std::cout<<duration_cast<microseconds>(pt5-pt4).count()/1000000.0<<std::endl;
     // stop here
 
     if(output_path != ""){
     	std::ofstream fout(output_path);
-    	for (size_t i = 0; i < dep_ptrs.size(); i++){
-    		fout << dep_ptrs[i] << std::endl;
+    	for (size_t i = 0; i < cluster.size(); i++){
+    		fout << cluster[i] << std::endl;
     	}
     	fout.close();
 	}
