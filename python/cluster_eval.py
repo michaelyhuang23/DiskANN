@@ -25,11 +25,15 @@ preds -= np.min(preds)
 
 label_counter = Counter(labels)
 pred_counter = Counter(preds)
+print('labels', label_counter)
+print('preds', pred_counter)
 TP_count = 0
 for label, label_count in label_counter.items():
 	ids = np.argwhere(labels == label)[:,0]
 	pred, pred_count = stats.mode(preds[ids], axis=None, keepdims=False)
+	print(label, pred)
 	if pred_count / (label_count + pred_counter[pred] - pred_count) > 0.5 :
+		print('pass', label, pred)
 		TP_count += 1
 
 recall50 = TP_count / len(label_counter)

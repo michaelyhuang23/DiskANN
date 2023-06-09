@@ -15,6 +15,9 @@ target_link_libraries(test_knn ${PROJECT_NAME} ${DISKANN_ASYNC_LIB} ${DISKANN_TO
 add_executable(doubling_dpc doubling_dpc.cpp)
 target_link_libraries(doubling_dpc ${PROJECT_NAME} ${DISKANN_ASYNC_LIB} ${DISKANN_TOOLS_TCMALLOC_LINK_OPTIONS} Boost::program_options)
 
+add_executable(bruteforce_dpc bruteforce_dpc.cpp)
+target_link_libraries(bruteforce_dpc ${PROJECT_NAME} ${DISKANN_ASYNC_LIB} ${DISKANN_TOOLS_TCMALLOC_LINK_OPTIONS} Boost::program_options)
+
 add_executable(blindprobe_dpc blindprobe_dpc.cpp)
 target_link_libraries(blindprobe_dpc ${PROJECT_NAME} ${DISKANN_ASYNC_LIB} ${DISKANN_TOOLS_TCMALLOC_LINK_OPTIONS} Boost::program_options)
 
