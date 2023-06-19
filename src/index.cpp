@@ -1018,9 +1018,8 @@ namespace diskann {
 
     uint32_t hops = 0;
     uint32_t cmps = 0;
-    uint32_t visit_count = 0;
 
-    while (visit_count < visit_threshold) { // visit_threshold is max points to visit before terminating
+    while (cmps < visit_threshold) { // visit_threshold is max points to visit before terminating
       auto nbr = pq.top(); 
       pq.pop();
       auto n = nbr.id;
@@ -1029,9 +1028,9 @@ namespace diskann {
       // Add node to expanded nodes to create pool for prune later
       if (!search_invocation &&
           (n != _start || _num_frozen_pts == 0 || ret_frozen)) {
-        expanded_nodes.emplace_back(nbr);
+        expanded_nodes.emplace_back(nbr); // I don't know what this does, so I kept it
       }
-      // Find which of the nodes in des have not been visited before
+      
       id_scratch.clear();
       dist_scratch.clear();
       {
@@ -1039,7 +1038,7 @@ namespace diskann {
           _locks[n].lock();
         for (auto id : _final_graph[n]) {
           assert(id < _max_points + _num_frozen_pts);
-          if (is_not_visited(id)) {
+          if (is_not_visited(id)) { // Find which of the nodes in neighborhood that have not been visited before
             id_scratch.push_back(id);
           }
         }
@@ -1047,8 +1046,6 @@ namespace diskann {
         if (_dynamic_index)
           _locks[n].unlock();
       }
-
-      visit_count += id_scratch.size();
 
       // Mark nodes visited
       for (auto id : id_scratch) {
@@ -1078,13 +1075,13 @@ namespace diskann {
               (unsigned) _aligned_dim));
         }
       }
-      cmps += id_scratch.size();
+      cmps += id_scratch.size(); // count how many nodes are visited
 
       // Insert <id, dist> pairs into the pool of candidates
       for (size_t m = 0; m < id_scratch.size(); ++m) {
         Neighbor new_nbr = Neighbor(id_scratch[m], dist_scratch[m]);
         pq.push(new_nbr);
-        if(filter(id_scratch[m]))
+        if(filter(id_scratch[m])) // check if it passes the density condition, only insert into best_L_nodes if it has higher density than query point
           best_L_nodes.insert(new_nbr);
       } 
     }
