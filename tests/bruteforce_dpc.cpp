@@ -99,7 +99,7 @@ void dpc(const unsigned K, float density_cutoff, float dist_cutoff, std::string&
 	for(size_t i=0; i<n; i++) {
 		std::vector<float> dists(n, std::numeric_limits<float>::max());
 		for(size_t j=0; j<n; j++) 
-			if(densities[j] > densities[i])
+			if(densities[j] > densities[i] || densities[j] == densities[i] && j < i)
 				dists[j] = calc_dist(points[i], points[j]);
 		float m_dist = std::numeric_limits<float>::max();
 		size_t id = n;
@@ -125,11 +125,14 @@ void dpc(const unsigned K, float density_cutoff, float dist_cutoff, std::string&
 	for(size_t i=0; i<n; i++){
 		if(densities[i]<=density_cutoff || dep_dists[i]<=dist_cutoff){
 			finder.merge(i, dep_ptrs[i]);
+		}else{
+			std::cout<<i<<std::endl;
 		}
 	}
 
 	std::vector<int> cluster(n);
 	for(size_t i=0; i<n; i++) cluster[i] = finder.find(i);
+
 
     if(output_file != ""){
     	std::ofstream fout(output_file);
@@ -161,7 +164,7 @@ int main(int argc, char** argv){
 				       "Density below which points are treated as noise");
 	    desc.add_options()("dist_cutoff",
 				       po::value<float>(&dist_cutoff)->default_value(0.0f),
-				       "Density below which points are sorted into the same cluster");
+				       "Distance below which points are sorted into the same cluster");
 	    po::variables_map vm;
 	    po::store(po::parse_command_line(argc, argv, desc), vm);
     	if (vm.count("help")) {

@@ -152,8 +152,8 @@ namespace diskann {
 
  
     DISKANN_DLLEXPORT std::pair<uint32_t, uint32_t> search_density(
-        const T *query, const size_t K, const unsigned L, 
-        const float density_threshold, const unsigned visit_threshold,
+        const T *query, const uint32_t query_id, const size_t K, 
+        const unsigned L, const unsigned visit_threshold,
         const std::vector<float> &densities, uint32_t *indices, float *distances = nullptr);
 
     // Initialize space for res_vectors before calling.

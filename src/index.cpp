@@ -823,8 +823,8 @@ namespace diskann {
           pq_dist_lookup(pq_coord_scratch, 1, this->_num_pq_chunks, pq_dists,
                          &distance);
         else{
-          distance = _distance->compare(_data + _aligned_dim * (size_t) id,
-                                        aligned_query, (unsigned) _aligned_dim);
+          distance = _distance->compare(aligned_query, _data + _aligned_dim * (size_t) id,
+              (unsigned) _aligned_dim);
         }
         Neighbor nn = Neighbor(id, distance);
         best_L_nodes.insert(nn);
@@ -884,8 +884,7 @@ namespace diskann {
                 sizeof(T) * _aligned_dim);
           }
 
-          dist_scratch.push_back( _distance->compare(
-              aligned_query, _data + _aligned_dim * (size_t) id,
+          dist_scratch.push_back( _distance->compare(aligned_query, _data + _aligned_dim * (size_t) id,
               (unsigned) _aligned_dim));
         }
       }
@@ -983,7 +982,9 @@ namespace diskann {
                               this->_num_pq_chunks, pq_dists, dists_out);
     };
 
-    std::priority_queue<Neighbor> pq;
+    // everything before this point are just preparations 
+
+    std::priority_queue<Neighbor, std::vector<Neighbor>, std::greater<Neighbor>> pq;
     // Initialize the candidate pool with starting points
     for (auto id : init_ids) {
       if (id >= _max_points + _num_frozen_pts) {
@@ -1006,25 +1007,25 @@ namespace diskann {
           pq_dist_lookup(pq_coord_scratch, 1, this->_num_pq_chunks, pq_dists,
                          &distance);
         else
-          distance = _distance->compare(_data + _aligned_dim * (size_t) id,
-                                        aligned_query, (unsigned) _aligned_dim);
+          distance = _distance->compare(aligned_query, _data + _aligned_dim * (size_t) id,
+              (unsigned) _aligned_dim);
         Neighbor nn = Neighbor(id, distance);
         pq.push(nn);
         if(filter(id))
           best_L_nodes.insert(nn);
       }
-    }
+    } // this is just to put the initial points into the priority search queue
 
     uint32_t hops = 0;
     uint32_t cmps = 0;
     uint32_t visit_count = 0;
 
-    while (visit_count < visit_threshold) {
+    while (visit_count < visit_threshold) { // visit_threshold is max points to visit before terminating
       auto nbr = pq.top(); 
       pq.pop();
       auto n = nbr.id;
-      if(best_L_nodes.size()==Lsize && best_L_nodes[best_L_nodes.size()-1] < nbr) // termination condition
-        break;
+      if(best_L_nodes.size()==Lsize && nbr > best_L_nodes[best_L_nodes.size()-1]) // termination condition
+        break; // terminate when we have Lsize points with larger density than threshold, and the farthest point is closer than the current search point. 
       // Add node to expanded nodes to create pool for prune later
       if (!search_invocation &&
           (n != _start || _num_frozen_pts == 0 || ret_frozen)) {
@@ -1073,9 +1074,7 @@ namespace diskann {
                 (const char *) _data + _aligned_dim * (size_t) nextn,
                 sizeof(T) * _aligned_dim);
           }
-
-          dist_scratch.push_back( _distance->compare(
-              aligned_query, _data + _aligned_dim * (size_t) id,
+          dist_scratch.push_back( _distance->compare(aligned_query, _data + _aligned_dim * (size_t) id,
               (unsigned) _aligned_dim));
         }
       }
@@ -1755,9 +1754,9 @@ namespace diskann {
 
   template<typename T, typename TagT>
   std::pair<uint32_t, uint32_t> Index<T, TagT>::search_density(const T *query,
+                                                       const uint32_t query_id, 
                                                        const size_t K,
                                                        const unsigned L,
-                                                       const float density_threshold,
                                                        const unsigned visit_threshold,
                                                        const std::vector<float> &densities,
                                                        uint32_t *indices,
@@ -1782,9 +1781,9 @@ namespace diskann {
     std::vector<unsigned> init_ids;
     init_ids.push_back(_start);
     std::shared_lock<std::shared_timed_mutex> lock(_update_lock);
-    auto filter = [&densities, density_threshold](unsigned id){ return densities[id] > density_threshold; };
+    auto filter = [&densities, query_id](unsigned id){ return densities[id] > densities[query_id] || (densities[id] == densities[query_id] && id < query_id); };
     auto retval =
-        iterate_to_fixed_point_til_found(query, L, visit_threshold, init_ids, filter, scratch, true, true);
+        iterate_to_fixed_point_til_found(query, L, visit_threshold, init_ids, filter, scratch, true, true); // this function is custom made and contains the searching, the rest is just reading the result
     NeighborPriorityQueue &best_L_nodes = scratch->best_l_nodes();
 
     size_t pos = 0;

@@ -13,7 +13,7 @@ with open(decision_graph_path, 'r') as file:
 	data = np.array([[float(num) for num in line.split()] for line in file])
 
 for i in range(len(data)):
-	if data[i, 1] >  1e11:
+	if data[i, 1] >  10**11:
 		data[i, 1] = -1
 
 max_dist = np.max(data[:, 1])

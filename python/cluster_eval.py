@@ -20,8 +20,6 @@ with open(gt_path, 'r') as file:
 with open(cluster_path, 'r') as file:
 	preds = np.array([int(line.rstrip()) for line in file])
 
-labels -= np.min(labels)
-preds -= np.min(preds)
 
 label_counter = Counter(labels)
 pred_counter = Counter(preds)
